@@ -37,7 +37,7 @@
         </div>
         <input type="file" id="logoFile" accept="image/png,image/jpeg,image/webp">
       </div>
-      <span class="title">Asignación de recursos <small>v6</small></span>
+      <span class="title">Asignación de recursos <small>v8</small></span>
     </div>
     <div class="tpl-wrap">
       <button class="tbtn" id="tplBtn">Plantillas ▾</button>
@@ -54,6 +54,13 @@
   </div></div>
 
   <div class="wrap">
+    <div class="projectbar">
+      <div class="pj"><label>Obra / Proyecto</label><select id="projectSel"></select></div>
+      <button class="tbtn" id="pjNew">+ Nueva</button>
+      <button class="tbtn" id="pjRename">Renombrar</button>
+      <button class="tbtn" id="pjDelete">Eliminar</button>
+      <label class="chart-toggle consol"><input type="checkbox" id="consolidated"> Consolidado (todas las obras)</label>
+    </div>
     <header class="head">
       <div class="setup">
         <div class="fld"><label>Empresa</label><input id="fCompany" placeholder="Nombre de la empresa"></div>
@@ -75,7 +82,24 @@
           <input class="income__input" id="fIncome" inputmode="decimal" placeholder="0" value="700000"></div>
         <div class="income__note" id="periodNote"></div>
       </div>
+
+      <div class="finctl" id="finPanel">
+        <div class="finctl__head" id="finToggle">
+          <h3>Control financiero <span class="sub">— retención e impuestos (opcional)</span></h3>
+          <span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+        </div>
+        <div class="finctl__body">
+          <div class="finctl__fields">
+            <div class="fld"><label>Retención %</label><input id="fRetain" inputmode="decimal" value="0"></div>
+            <div class="fld"><label>Impuesto %</label><input id="fTax" inputmode="decimal" value="0"></div>
+            <div class="fld"><label>Etiqueta del impuesto</label><input id="fTaxLabel" value="GST/HST"></div>
+          </div>
+          <div class="pay-break" id="payBreak"></div>
+        </div>
+      </div>
     </header>
+
+    <div class="alerts" id="alertsPanel"><div class="alerts__title">Alertas de control</div><div id="alertsList"></div></div>
 
     <div class="distro__bar" id="distroBar"></div>
 
@@ -104,6 +128,15 @@
       </div>
     </div>
 
+    <div class="analysis">
+      <span class="analysis__lbl">Modo de análisis</span>
+      <div class="seg" id="analysisMode">
+        <button class="seg__b active" data-mode="none">Solo asignación</button>
+        <button class="seg__b" data-mode="actual">Presupuesto vs Real</button>
+        <button class="seg__b" data-mode="period">vs Periodo anterior</button>
+      </div>
+    </div>
+
     <div class="sec-head"><h2>Sectores de asignación</h2><span id="pctTotal"></span></div>
     <div class="sec-cols">
       <span>Nombre del sector</span><span>Tipo</span><span>Valor</span><span>Monto asignado</span><span></span>
@@ -111,14 +144,23 @@
     <div id="sectors"></div>
     <div class="addbar"><button class="tbtn" id="addBtn">+ Añadir sector</button><button class="tbtn" id="resetBtn">Restablecer</button></div>
 
+    <div class="panel exec">
+      <label class="exec__lbl" for="fExec">Resumen ejecutivo <span>— aparece al inicio del PDF y el Word</span></label>
+      <textarea id="fExec" rows="3" placeholder="Contexto, hallazgos clave y decisiones del periodo. Ej: «El gasto en mano de obra superó el presupuesto por horas extra en la fase de estructura; se recomienda ajustar…»"></textarea>
+    </div>
+
     <div class="panel" id="histPanel">
       <div class="hist__head" id="histToggle">
         <div><h2>Historial y comparación <span class="sub">(opcional)</span></h2></div>
         <div style="display:flex;align-items:center;gap:0.7rem;"><button class="tbtn" id="saveSnap">Guardar este periodo</button><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></span></div>
       </div>
       <div class="hist__body">
-        <div class="cmp-banner" id="cmpBanner"><span>Comparando con <b id="cmpLabel"></b>. El reporte incluirá el análisis de variación.</span><button class="mini" id="cmpOff">Quitar comparación</button></div>
+        <div class="cmp-banner" id="cmpBanner"><span>Comparando con <b id="cmpLabel"></b>. Elige el modo «vs Periodo anterior» para verlo en el reporte.</span><button class="mini" id="cmpOff">Quitar comparación</button></div>
         <div id="snapList"></div>
+        <div class="trend" id="trendWrap">
+          <div class="trend__head">Tendencia — ingreso por periodo guardado</div>
+          <div class="trend__box"><canvas id="trendCanvas"></canvas></div>
+        </div>
       </div>
     </div>
 
