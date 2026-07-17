@@ -210,6 +210,35 @@
   .modal__x:hover{color:var(--text);}
 
   input[type=file]{display:none;}
+
+  /* Vista previa (botón + visor) */
+  .preview-bar{display:flex;align-items:center;gap:0.9rem;margin-bottom:0.9rem;flex-wrap:wrap;}
+  .preview-btn{display:inline-flex;align-items:center;gap:0.5rem;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-2);color:var(--text);border-radius:11px;padding:0.7rem 1.1rem;font-size:0.9rem;font-weight:600;cursor:pointer;transition:transform 0.15s,border-color 0.2s;}
+  .preview-btn:hover{transform:translateY(-1px);border-color:var(--blue);color:var(--blue);}
+  .preview-btn svg{color:var(--blue);}
+  .preview-hint{font-family:var(--font-num);font-size:0.7rem;color:var(--text-3);}
+
+  .pv{position:fixed;inset:0;background:rgba(4,7,16,0.86);backdrop-filter:blur(4px);z-index:70;display:none;padding:1.2rem;}
+  .pv.open{display:flex;align-items:center;justify-content:center;}
+  .pv__panel{background:var(--surface);border:1px solid var(--line-2);border-radius:16px;width:100%;max-width:900px;height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.6);}
+  .pv__bar{display:flex;align-items:center;gap:0.6rem;padding:0.7rem 0.9rem;border-bottom:1px solid var(--line);background:var(--bg-2);}
+  .pv__tabs{display:flex;gap:0.25rem;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:0.2rem;margin-right:auto;flex-wrap:wrap;}
+  .pv__tab{background:transparent;border:none;color:var(--text-2);font-size:0.8rem;font-weight:500;padding:0.4rem 0.75rem;border-radius:7px;cursor:pointer;}
+  .pv__tab.active{background:var(--blue);color:#04122B;font-weight:600;}
+  .pv__refresh{background:var(--surface-2);border:1px solid var(--line-2);color:var(--text-2);border-radius:8px;padding:0.4rem 0.7rem;font-size:0.76rem;cursor:pointer;white-space:nowrap;}
+  .pv__refresh:hover{border-color:var(--blue);color:var(--blue);}
+  .pv__x{background:transparent;border:none;color:var(--text-3);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 0.3rem;}
+  .pv__x:hover{color:var(--text);}
+  .pv__body{flex:1;overflow:auto;background:#3A4358;display:flex;justify-content:center;padding:1.2rem;}
+  .pv__body iframe{width:100%;height:100%;border:none;border-radius:6px;background:#fff;}
+  .pv__paper{background:#fff;color:#0F172A;width:100%;max-width:720px;min-height:100%;padding:0 0 24px;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,0.4);font-family:Arial,sans-serif;height:max-content;}
+  .pv__paper h3{padding:0 22px;} .pv__paper p{padding:0 22px;} .pv__paper table{width:calc(100% - 44px)!important;margin:0 22px;}
+  .pv__text{width:100%;max-width:720px;height:max-content;min-height:100%;background:#0E1626;color:#D7E0F2;border:1px solid var(--line-2);border-radius:6px;font-family:var(--font-num);font-size:0.8rem;line-height:1.55;padding:1rem;resize:none;outline:none;white-space:pre;overflow:auto;}
+  .pv__msg{color:#E6ECF7;background:var(--surface);border:1px dashed var(--line-2);border-radius:10px;padding:1.4rem;max-width:520px;align-self:center;margin:auto;font-size:0.9rem;line-height:1.6;text-align:center;}
+  .pv__foot{display:flex;align-items:center;justify-content:space-between;gap:0.8rem;padding:0.7rem 0.9rem;border-top:1px solid var(--line);background:var(--bg-2);}
+  .pv__note{font-family:var(--font-num);font-size:0.72rem;color:var(--text-3);}
+  @media (max-width:680px){.pv{padding:0;}.pv__panel{height:100vh;border-radius:0;max-width:none;}}
+
   .hint{font-family:var(--font-num);font-size:0.7rem;color:var(--text-3);text-align:center;padding-bottom:2rem;line-height:1.7;}
   .hint b{color:var(--text-2);font-weight:500;}
 </style>
@@ -322,6 +351,14 @@
       </div>
     </div>
 
+    <div class="preview-bar">
+      <button class="preview-btn" id="openPreview">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        Vista previa del documento
+      </button>
+      <span class="preview-hint">Míralo y ajústalo antes de exportar</span>
+    </div>
+
     <div class="export" id="exportPanel">
       <div class="export__head" id="exportToggle">
         <h3>Exportar el reporte</h3>
@@ -350,6 +387,26 @@
     <button class="modal__x" id="modalX" aria-label="Cerrar">×</button>
     <h4 id="modalTitle"></h4><div id="modalBody"></div>
   </div></div>
+
+  <div class="pv" id="preview">
+    <div class="pv__panel">
+      <div class="pv__bar">
+        <div class="pv__tabs" id="pvTabs">
+          <button class="pv__tab active" data-pv="pdf">PDF</button>
+          <button class="pv__tab" data-pv="word">Word</button>
+          <button class="pv__tab" data-pv="txt">Texto</button>
+          <button class="pv__tab" data-pv="md">Markdown</button>
+        </div>
+        <button class="pv__refresh" id="pvRefresh" title="Actualizar la vista con los cambios">↻ Actualizar</button>
+        <button class="pv__x" id="pvX" aria-label="Cerrar vista previa">×</button>
+      </div>
+      <div class="pv__body" id="pvBody"></div>
+      <div class="pv__foot">
+        <span class="pv__note" id="pvNote"></span>
+        <button class="tbtn zip" id="pvDownload">Descargar</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 (function(){
@@ -845,18 +902,20 @@
   }
   function exportTXT(){downloadBlob(new Blob([buildTXT()],{type:"text/plain"}),baseName()+".txt");}
 
-  function exportWord(){
+  function buildWordInner(){
     var d=reportData(),c=d.c,img=(state.showChart!==false)?chartExportImage():null;
     var rows=d.body.map(function(r){return "<tr>"+r.map(function(x,i){return "<td style='border:1px solid #ccc;padding:6px;"+((d.base&&i>=1)||(!d.base&&i>=3)?"text-align:right;":"")+"'>"+x+"</td>";}).join("")+"</tr>";}).join("");
     var totCells;
     if(d.base){var pTot=d.base.rows.reduce(function(a,b){return a+(b.amount||0);},0),dTot=c.assigned-pTot;
       totCells="<td style='border:1px solid #ccc;padding:6px'>"+T.total+"</td><td style='border:1px solid #ccc;padding:6px;text-align:right'>"+money(c.assigned)+"</td><td style='border:1px solid #ccc;padding:6px;text-align:right'>"+money(pTot)+"</td><td style='border:1px solid #ccc;padding:6px;text-align:right'>"+(dTot>=0?"+":"−")+money(Math.abs(dTot)).replace("-","")+"</td><td style='border:1px solid #ccc;padding:6px;text-align:right'>"+varPct(dTot,pTot)+"</td>";}
     else totCells="<td style='border:1px solid #ccc;padding:6px' colspan='3'>"+T.total+"</td><td style='border:1px solid #ccc;padding:6px;text-align:right'>"+money(c.assigned)+"</td><td style='border:1px solid #ccc;padding:6px;text-align:right'>"+(c.inc>0?(c.assigned/c.inc*100):0).toFixed(2)+"%</td>";
-    var html="<html><head><meta charset='utf-8'></head><body style='font-family:Arial;color:#0F172A'>"
-      +"<div style='background:#0F172A;color:#fff;padding:14px'><div style='font-size:18px;font-weight:bold'>"+d.meta.company+"</div><div style='font-size:12px;color:#96AFDC'>"+T.title+" · "+d.subtitle+"</div></div>"
+    return "<div style='background:#0F172A;color:#fff;padding:14px'><div style='font-size:18px;font-weight:bold'>"+d.meta.company+"</div><div style='font-size:12px;color:#96AFDC'>"+T.title+" · "+d.subtitle+"</div></div>"
       +"<h3>Summary</h3><p><b>"+T.income+":</b> "+money(c.inc)+"<br><b>"+T.assigned+":</b> "+money(c.assigned)+"<br><b>"+T.rest+":</b> "+money(c.rest)+"<br><b>"+T.status+":</b> "+statusEn(c)+"<br><b>"+T.prepared+":</b> "+d.meta.preparer+"</p>"
-      +(img?"<p><img src='"+img+"' style='width:540px'/></p>":"")
-      +"<table style='border-collapse:collapse;width:100%'><thead><tr>"+d.head.map(function(x){return "<th style='border:1px solid #ccc;padding:6px;background:#1F345A;color:#fff'>"+x+"</th>";}).join("")+"</tr></thead><tbody>"+rows+"<tr style='background:#E7EEF8;font-weight:bold'>"+totCells+"</tr></tbody></table></body></html>";
+      +(img?"<p><img src='"+img+"' style='width:540px;max-width:100%'/></p>":"")
+      +"<table style='border-collapse:collapse;width:100%'><thead><tr>"+d.head.map(function(x){return "<th style='border:1px solid #ccc;padding:6px;background:#1F345A;color:#fff'>"+x+"</th>";}).join("")+"</tr></thead><tbody>"+rows+"<tr style='background:#E7EEF8;font-weight:bold'>"+totCells+"</tr></tbody></table>";
+  }
+  function exportWord(){
+    var html="<html><head><meta charset='utf-8'></head><body style='font-family:Arial;color:#0F172A'>"+buildWordInner()+"</body></html>";
     downloadBlob(new Blob([html],{type:"application/msword"}),baseName()+".doc");
   }
 
@@ -895,13 +954,13 @@
   }
   function exportPPTX(){buildPPTX().writeFile({fileName:baseName()+".pptx"});}
 
-  function exportMD(){
+  function buildMD(){
     var d=reportData(),c=d.c;
-    var md="# "+d.meta.company+"\n### "+T.title+"\n\n**"+d.subtitle+"**\n\n"
+    return "# "+d.meta.company+"\n### "+T.title+"\n\n**"+d.subtitle+"**\n\n"
       +"| Metric | Value |\n|---|---|\n| "+T.income+" | "+money(c.inc)+" |\n| "+T.assigned+" | "+money(c.assigned)+" |\n| "+T.rest+" | "+money(c.rest)+" |\n| "+T.status+" | "+statusEn(c)+" |\n| "+T.prepared+" | "+d.meta.preparer+" |\n\n"
       +"| "+d.head.join(" | ")+" |\n|"+d.head.map(function(){return "---";}).join("|")+"|\n"+d.body.map(function(r){return "| "+r.join(" | ")+" |";}).join("\n")+"\n";
-    downloadBlob(new Blob([md],{type:"text/markdown"}),baseName()+".md");
   }
+  function exportMD(){downloadBlob(new Blob([buildMD()],{type:"text/markdown"}),baseName()+".md");}
 
   function exportZIP(){
     if(typeof JSZip==="undefined"){alert("La librería de compresión aún no cargó. Espera unos segundos y prueba de nuevo.");return;}
@@ -918,6 +977,46 @@
     catch(err){alert("No se pudo exportar a "+k+". Si acabas de abrir la página, espera unos segundos a que carguen las librerías y prueba de nuevo.");}});
   $("zipBtn").addEventListener("click",exportZIP);
   $("exportToggle").addEventListener("click",function(){$("exportPanel").classList.toggle("open");});
+
+  // ══ VISOR / VISTA PREVIA ══
+  var pvFmt="pdf";
+  var PV_LABEL={pdf:"Descargar PDF",word:"Descargar Word",txt:"Descargar Texto",md:"Descargar Markdown"};
+  function clearPvUrl(){var f=$("pvBody").querySelector("iframe");if(f&&f.src&&f.src.indexOf("blob:")===0){try{URL.revokeObjectURL(f.src);}catch(e){}}}
+  function renderPreview(){
+    var body=$("pvBody");clearPvUrl();body.innerHTML="";
+    Array.prototype.forEach.call($("pvTabs").children,function(t){t.classList.toggle("active",t.getAttribute("data-pv")===pvFmt);});
+    $("pvDownload").textContent=PV_LABEL[pvFmt]||"Descargar";$("pvNote").textContent="";
+    if(pvFmt==="pdf"){
+      try{var url=buildPDF().output("bloburl");var f=document.createElement("iframe");f.src=url;body.appendChild(f);
+        $("pvNote").textContent="Así se verá el PDF. Ajusta los datos en el panel y pulsa Actualizar.";}
+      catch(e){body.innerHTML='<div class="pv__msg">La vista de PDF necesita conexión a internet (la librería del PDF se carga desde la web). Ábrelo en tu navegador con internet.<br><br>Mientras tanto, puedes previsualizar en <b>Word</b>, <b>Texto</b> o <b>Markdown</b>, que funcionan sin conexión.</div>';}
+    }else if(pvFmt==="word"){
+      var paper=document.createElement("div");paper.className="pv__paper";paper.innerHTML=buildWordInner();body.appendChild(paper);
+      $("pvNote").textContent="Vista aproximada del documento Word.";
+    }else if(pvFmt==="txt"){
+      var ta=document.createElement("textarea");ta.className="pv__text";ta.id="pvEdit";ta.value=buildTXT();body.appendChild(ta);
+      $("pvNote").textContent="Puedes editar el texto aquí antes de descargarlo.";
+    }else if(pvFmt==="md"){
+      var ta2=document.createElement("textarea");ta2.className="pv__text";ta2.id="pvEdit";ta2.value=buildMD();body.appendChild(ta2);
+      $("pvNote").textContent="Puedes editar el Markdown aquí antes de descargarlo.";
+    }
+  }
+  function openPreview(){$("preview").classList.add("open");document.body.style.overflow="hidden";renderPreview();}
+  function closePreview(){clearPvUrl();$("preview").classList.remove("open");document.body.style.overflow="";}
+  $("openPreview").addEventListener("click",openPreview);
+  $("pvX").addEventListener("click",closePreview);
+  $("preview").addEventListener("click",function(e){if(e.target===this)closePreview();});
+  $("pvRefresh").addEventListener("click",renderPreview);
+  $("pvTabs").addEventListener("click",function(e){var b=e.target.closest("[data-pv]");if(!b)return;pvFmt=b.getAttribute("data-pv");renderPreview();});
+  $("pvDownload").addEventListener("click",function(){
+    try{
+      if(pvFmt==="pdf")exportPDF();
+      else if(pvFmt==="word")exportWord();
+      else if(pvFmt==="txt"){var t=$("pvEdit")?$("pvEdit").value:buildTXT();downloadBlob(new Blob([t],{type:"text/plain"}),baseName()+".txt");}
+      else if(pvFmt==="md"){var m=$("pvEdit")?$("pvEdit").value:buildMD();downloadBlob(new Blob([m],{type:"text/markdown"}),baseName()+".md");}
+    }catch(err){alert("No se pudo generar el archivo. Si acabas de abrir la página, espera a que carguen las librerías (necesitan internet) y prueba de nuevo.");}
+  });
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&$("preview").classList.contains("open"))closePreview();});
 
   load();render();
 })();
