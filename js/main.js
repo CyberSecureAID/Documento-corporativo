@@ -167,6 +167,10 @@
     if(state.preparer===undefined)state.preparer=""; if(state.logo===undefined)state.logo=null; if(state.showChart===undefined)state.showChart=true;
     if(!state.company)state.company="North Peak Construction Alliance Inc.";
     if(!state.period)state.period="Mensual"; if(!state.date)state.date=todayISO(); if(!state.currency)state.currency="CAD";
+    var FD={actual:false,tax:false,alerts:false,exec:false,notes:false,showRest:true,multiproject:false};
+    if(!state.features||typeof state.features!=="object")state.features={};
+    Object.keys(FD).forEach(function(k){if(state.features[k]===undefined)state.features[k]=FD[k];});
+    if(!state.features.multiproject)viewConsolidated=false;
     state.projects.forEach(function(p){
       if(p.execSummary===undefined)p.execSummary=""; if(p.retainagePct===undefined)p.retainagePct=0; if(p.taxPct===undefined)p.taxPct=0;
       if(!p.taxLabel)p.taxLabel="GST/HST"; if(!p.analysisMode)p.analysisMode="none"; if(p.alertMaxPct===undefined)p.alertMaxPct="";
@@ -212,7 +216,7 @@
     if(c.rest<-0.005)A.push({lvl:"red",msg:es?("Sobreasignado por "+money(-c.rest)):("Over-allocated by "+money(-c.rest))});
     else if(Math.abs(c.rest)>0.005&&c.inc>0)A.push({lvl:"amber",msg:es?("Sin asignar: "+money(c.rest)):("Unallocated: "+money(c.rest))});
     c.rows.forEach(function(r){if(/profit|utilidad|net income|net profit/i.test((r.en||"")+" "+(r.name||""))&&r.amount<-0.005)A.push({lvl:"red",msg:(es?"Utilidad negativa en ":"Negative profit in ")+(es?r.name:enName(r))});});
-    if((state.analysisMode==="actual")&&!viewConsolidated)c.rows.forEach(function(r){var a=parseFloat(r.actual)||0;if(a>r.amount+0.005)A.push({lvl:"amber",msg:(es?r.name:enName(r))+(es?" sobre presupuesto por ":" over budget by ")+money(a-r.amount)});});
+    if((state.features.actual)&&!viewConsolidated)c.rows.forEach(function(r){var a=parseFloat(r.actual)||0;if(a>r.amount+0.005)A.push({lvl:"amber",msg:(es?r.name:enName(r))+(es?" sobre presupuesto por ":" over budget by ")+money(a-r.amount)});});
     var th=parseFloat(state.alertMaxPct);if(th>0)c.rows.forEach(function(r){if(r.pct>th+0.005)A.push({lvl:"amber",msg:(es?r.name:enName(r))+" "+r.pct.toFixed(1)+"% (> "+th+"%)"});});
     if(c.inc<=0)A.push({lvl:"amber",msg:es?"No hay ingreso reportado":"No reported income"});
     return A;}
@@ -317,14 +321,21 @@
     var d=new Date(state.date+"T00:00:00");var mes=isNaN(d)?"":d.toLocaleDateString('es',{month:'long',year:'numeric'});
     $("periodNote").textContent="Periodo "+state.period.toLowerCase()+(mes?" · "+mes:"")+" · "+state.currency;
     $("showChart").checked=state.showChart!==false;document.querySelector(".chart-box").classList.toggle("off",state.showChart===false);
-    Array.prototype.forEach.call($("analysisMode").children,function(b){b.classList.toggle("active",b.getAttribute("data-mode")===(state.analysisMode||"none"));});
+    applyFeatures();
     renderProjects();renderLogo();computedRender();renderSectors();renderHistory();
+  }
+  function hide(id,on){var e=$(id);if(e)e.classList.toggle("hidden",!on);}
+  function applyFeatures(){var f=state.features;
+    hide("projectbar",f.multiproject);hide("finPanel",f.tax);hide("execPanel",f.exec);hide("restCard",f.showRest);
+    if(f.tax)$("finPanel").classList.add("open");
+    [["fx_actual","actual"],["fx_tax","tax"],["fx_alerts","alerts"],["fx_exec","exec"],["fx_notes","notes"],["fx_showRest","showRest"],["fx_multiproject","multiproject"]].forEach(function(m){var e=$(m[0]);if(e)e.checked=!!f[m[1]];});
+    var badge=currentMode();var mb=$("modeBadge");if(mb){mb.textContent=badge==="actual"?"Presupuesto vs Real":(badge==="period"?"vs Periodo anterior":"");mb.classList.toggle("on",badge!=="none");}
   }
   function computedRender(){
     var c=compute(),base=compareBase();
     $("sumIncome").textContent=money(c.inc);$("sumAssigned").textContent=money(c.assigned);$("sumRest").textContent=money(c.rest);
-    var over=c.rest<-0.005,full=Math.abs(c.rest)<0.005;
-    $("restCard").className="card"+(over?" warn":(full?" ok":""));
+    var over=c.rest<-0.005,full=Math.abs(c.rest)<0.005,rc=$("restCard");
+    rc.classList.remove("warn","ok");if(over)rc.classList.add("warn");else if(full)rc.classList.add("ok");
     $("restState").textContent=over?"Te pasaste del ingreso":(full?"Todo asignado ✓":"Falta por asignar");
     $("pctTotal").textContent=(c.inc>0?(c.assigned/c.inc*100):0).toFixed(1)+"% asignado";
     var bar=$("distroBar");bar.innerHTML="";
@@ -348,7 +359,7 @@
       +'<div class="pay-row net"><span>Neto a pagar este periodo</span><b>'+money(p.net)+'</b></div>';
   }
   function renderAlerts(c){var panel=$("alertsPanel"),list=$("alertsList");if(!panel)return;
-    var A=computeAlerts(c,"es");panel.classList.toggle("on",A.length>0);
+    var A=state.features.alerts?computeAlerts(c,"es"):[];panel.classList.toggle("on",A.length>0);
     list.innerHTML=A.map(function(a){return '<div class="alert '+a.lvl+'"><span class="alert__dot"></span>'+escapeHtml(a.msg)+'</div>';}).join("");
   }
   function drawTrendChart(){var wrap=$("trendWrap");if(!wrap)return;
@@ -359,20 +370,20 @@
     drawChart($("trendCanvas"),{items:items,kind:"line",legend:false,theme:THEME_DARK,W:W,H:H,moneyFn:money});
   }
   function renderSectors(){
-    var c=compute(),host=$("sectors"),showAct=(state.analysisMode==="actual")&&!viewConsolidated,ro=viewConsolidated,dis=ro?" disabled":"";host.innerHTML="";
+    var c=compute(),host=$("sectors"),showAct=(state.features.actual)&&!viewConsolidated,showNote=state.features.notes,ro=viewConsolidated,dis=ro?" disabled":"";host.innerHTML="";
     if(ro)host.innerHTML='<div class="empty">Vista consolidada (solo lectura): suma de todas las obras por partida. Elige una obra arriba para editar.</div>';
     c.rows.forEach(function(r){var el=document.createElement("div");el.className="sector"+(ro?" ro":"");
       var extra="";
       if(showAct){var a=parseFloat(r.actual)||0,dv=a-r.amount,cls=dv>0?"over":(dv<0?"under":"");
         extra+='<div class="xf"><label>Real</label><input class="xf__in" data-actual="'+r.id+'" inputmode="decimal" value="'+escapeAttr(String(r.actual||0))+'"><span class="xf__var '+cls+'">'+(a?((dv>=0?"+":"−")+moneyShort(Math.abs(dv))):"")+'</span></div>';}
-      extra+='<div class="xf grow"><label>Nota</label><input class="xf__in" data-note="'+r.id+'" value="'+escapeAttr(r.note||"")+'" placeholder="Nota para el reporte (opcional)"'+dis+'></div>';
+      if(showNote)extra+='<div class="xf grow"><label>Nota</label><input class="xf__in" data-note="'+r.id+'" value="'+escapeAttr(r.note||"")+'" placeholder="Nota para el reporte (opcional)"'+dis+'></div>';
       el.innerHTML='<div class="sector__top"><div class="namewrap"><span class="sector__color" style="background:'+r.color+'"></span><input class="sector__name" value="'+escapeAttr(r.name)+'" data-name="'+r.id+'"'+dis+'></div>'
         +'<select class="sector__type" data-type="'+r.id+'"'+dis+'><option value="percent"'+(r.type==="percent"?" selected":"")+'>%</option><option value="fixed"'+(r.type==="fixed"?" selected":"")+'>Monto</option></select>'
         +'<input class="sector__val" data-val="'+r.id+'" inputmode="decimal" value="'+escapeAttr(String(r.value))+'"'+dis+'>'
         +'<span class="sector__amount">'+money(r.amount)+'</span>'
         +'<span class="sector__btns"><button class="ibtn" data-info="'+escapeAttr(r.name)+'" title="Qué es">i</button>'+(ro?"":'<button class="ibtn del" data-del="'+r.id+'" title="Quitar">×</button>')+'</span></div>'
         +'<div class="sector__en"><label>EN</label><input data-en="'+r.id+'" value="'+escapeAttr(r.en||"")+'" placeholder="Nombre en inglés (para el documento)"'+dis+'></div>'
-        +'<div class="sector__extra">'+extra+'</div>';
+        +(extra?'<div class="sector__extra">'+extra+'</div>':'');
       host.appendChild(el);});
   }
   function renderHistory(){
@@ -428,8 +439,15 @@
   $("fTax").addEventListener("input",function(){state.taxPct=parseFloat(this.value)||0;save();computedRender();});
   $("fTaxLabel").addEventListener("input",function(){state.taxLabel=this.value;save();computedRender();});
 
-  // ── Modo de análisis ──
-  $("analysisMode").addEventListener("click",function(e){var b=e.target.closest("[data-mode]");if(!b)return;state.analysisMode=b.getAttribute("data-mode");save();render();});
+  // ── Menú de funciones (activar/desactivar) ──
+  var featMenu=$("featMenu");
+  $("featBtn").addEventListener("click",function(e){e.stopPropagation();featMenu.classList.toggle("open");$("tplMenu").classList.remove("open");$("logoMenu").classList.remove("open");});
+  featMenu.addEventListener("click",function(e){e.stopPropagation();});
+  var FXMAP={fx_actual:"actual",fx_tax:"tax",fx_alerts:"alerts",fx_exec:"exec",fx_notes:"notes",fx_showRest:"showRest",fx_multiproject:"multiproject"};
+  Object.keys(FXMAP).forEach(function(id){var el=$(id);if(!el)return;el.addEventListener("change",function(){
+    state.features[FXMAP[id]]=this.checked;
+    if(FXMAP[id]==="multiproject"&&!this.checked){viewConsolidated=false;}
+    save();render();});});
 
   // ── Resumen ejecutivo ──
   $("fExec").addEventListener("input",function(){state.execSummary=this.value;save();});
@@ -456,7 +474,8 @@
   var tplMenu=$("tplMenu");
   $("tplBtn").addEventListener("click",function(e){e.stopPropagation();tplMenu.classList.toggle("open");$("logoMenu").classList.remove("open");});
   document.addEventListener("click",function(e){if(!tplMenu.contains(e.target)&&e.target!==$("tplBtn"))tplMenu.classList.remove("open");
-    if(!$("logoMenu").contains(e.target)&&!$("logoBtn").contains(e.target))$("logoMenu").classList.remove("open");});
+    if(!$("logoMenu").contains(e.target)&&!$("logoBtn").contains(e.target))$("logoMenu").classList.remove("open");
+    if(!featMenu.contains(e.target)&&e.target!==$("featBtn"))featMenu.classList.remove("open");});
   tplList.addEventListener("click",function(e){var b=e.target.closest("[data-tpl]");if(!b)return;var k=b.getAttribute("data-tpl");
     if(confirm("¿Cargar \""+TEMPLATES[k].label+"\"? Reemplaza los sectores actuales.")){state.sectors=fromTemplate(k);save();render();tplMenu.classList.remove("open");}});
   $("tplCsv").addEventListener("click",function(){var csv="Sector,Tipo,Valor,SectorEN\nMano de obra,%,35,Labor\nMateriales,%,30,Materials\nEquipos,%,10,Equipment\nSubcontratistas,%,12,Subcontractors\nGastos generales,%,5,Overhead\nUtilidad,%,8,Profit\n";
@@ -512,9 +531,9 @@
   function dateEn(){var d=new Date(state.date+"T00:00:00");if(isNaN(d))return state.date;return MONTHS_EN[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear();}
   function statusEn(c){return c.rest<-0.005?T.over:(Math.abs(c.rest)<0.005?T.full:T.under);}
   function varPct(dv,prev){if(prev>0)return (dv>=0?"+":"")+(dv/prev*100).toFixed(1)+"%";if(dv!==0)return dv>0?"new":"−100%";return "0.0%";}
+  function currentMode(){if(state.features.actual&&!viewConsolidated)return "actual";if(compareBase())return "period";return "none";}
   function reportData(){
-    var c=compute(),mode=viewConsolidated?"none":(state.analysisMode||"none"),base=null,head,body,foot,align;
-    if(mode==="period"){base=compareBase();if(!base)mode="none";}
+    var c=compute(),mode=viewConsolidated?"none":currentMode(),base=(mode==="period")?compareBase():null,head,body,foot,align;
     if(mode==="actual"){
       head=[T.sector,T.budgeted,T.actualc,T.variance,T.varpct];align=["l","r","r","r","r"];
       body=c.rows.map(function(r){var a=parseFloat(r.actual)||0,dv=a-r.amount;return [enName(r),money(r.amount),money(a),(dv>=0?"+":"−")+money(Math.abs(dv)).replace("-",""),varPct(dv,r.amount)];});
