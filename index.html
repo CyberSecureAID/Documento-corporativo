@@ -40,6 +40,19 @@
       <span class="title">Asignación de recursos <small>v8</small></span>
     </div>
     <div class="tpl-wrap">
+      <button class="tbtn" id="featBtn">⚙ Funciones ▾</button>
+      <div class="tpl-menu feat-menu" id="featMenu">
+        <h5>Activa solo lo que necesites</h5>
+        <label class="feat-item"><input type="checkbox" id="fx_showRest"><span><b>Mostrar «Sin asignar»</b><small>La tarjeta de dinero que sobra del presupuesto</small></span></label>
+        <label class="feat-item"><input type="checkbox" id="fx_actual"><span><b>Presupuesto vs Real</b><small>Añade columna de gasto real y su desviación</small></span></label>
+        <label class="feat-item"><input type="checkbox" id="fx_tax"><span><b>Retención e impuestos</b><small>Calcula retención, impuesto y neto a pagar</small></span></label>
+        <label class="feat-item"><input type="checkbox" id="fx_alerts"><span><b>Alertas de control</b><small>Avisa de sobreasignación, sobregasto, etc.</small></span></label>
+        <label class="feat-item"><input type="checkbox" id="fx_exec"><span><b>Resumen ejecutivo</b><small>Cuadro de texto que encabeza el documento</small></span></label>
+        <label class="feat-item"><input type="checkbox" id="fx_notes"><span><b>Notas por partida</b><small>Una nota corta por sector en el reporte</small></span></label>
+        <label class="feat-item"><input type="checkbox" id="fx_multiproject"><span><b>Varias obras</b><small>Maneja varios proyectos y una vista consolidada</small></span></label>
+      </div>
+    </div>
+    <div class="tpl-wrap">
       <button class="tbtn" id="tplBtn">Plantillas ▾</button>
       <div class="tpl-menu" id="tplMenu">
         <h5>Cargar una plantilla</h5>
@@ -54,7 +67,7 @@
   </div></div>
 
   <div class="wrap">
-    <div class="projectbar">
+    <div class="projectbar" id="projectbar">
       <div class="pj"><label>Obra / Proyecto</label><select id="projectSel"></select></div>
       <button class="tbtn" id="pjNew">+ Nueva</button>
       <button class="tbtn" id="pjRename">Renombrar</button>
@@ -128,23 +141,14 @@
       </div>
     </div>
 
-    <div class="analysis">
-      <span class="analysis__lbl">Modo de análisis</span>
-      <div class="seg" id="analysisMode">
-        <button class="seg__b active" data-mode="none">Solo asignación</button>
-        <button class="seg__b" data-mode="actual">Presupuesto vs Real</button>
-        <button class="seg__b" data-mode="period">vs Periodo anterior</button>
-      </div>
-    </div>
-
-    <div class="sec-head"><h2>Sectores de asignación</h2><span id="pctTotal"></span></div>
+    <div class="sec-head"><h2>Sectores de asignación <span class="mode-badge" id="modeBadge"></span></h2><span id="pctTotal"></span></div>
     <div class="sec-cols">
       <span>Nombre del sector</span><span>Tipo</span><span>Valor</span><span>Monto asignado</span><span></span>
     </div>
     <div id="sectors"></div>
     <div class="addbar"><button class="tbtn" id="addBtn">+ Añadir sector</button><button class="tbtn" id="resetBtn">Restablecer</button></div>
 
-    <div class="panel exec">
+    <div class="panel exec" id="execPanel">
       <label class="exec__lbl" for="fExec">Resumen ejecutivo <span>— aparece al inicio del PDF y el Word</span></label>
       <textarea id="fExec" rows="3" placeholder="Contexto, hallazgos clave y decisiones del periodo. Ej: «El gasto en mano de obra superó el presupuesto por horas extra en la fase de estructura; se recomienda ajustar…»"></textarea>
     </div>
